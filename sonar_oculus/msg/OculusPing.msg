@@ -1,6 +1,6 @@
 std_msgs/Header header
 
-OculusFire fire_msg
+sonar_oculus/OculusFire fire_msg
 
 uint32     ping_id
 uint16     part_number

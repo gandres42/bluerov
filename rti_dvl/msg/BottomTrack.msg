@@ -1,5 +1,5 @@
-Header header
-rti_dvl/Command command
+std_msgs/Header header
+Command command
 
 # Sample number
 uint64 sample

@@ -1,0 +1,36 @@
+sonar_oculus_node:
+  ros__parameters:
+    # Frequency mode: 1 => ~750kHz (M750d) / 1.2MHz (M1200d)
+    #                 2 => ~1.2MHz (M750d) / 2.1MHz (M1200d)
+    mode: 1
+    
+    # Ping rate: 0=normal(10Hz), 1=high(15Hz), 2=highest(40Hz), 3=low(5Hz), 4=lowest(2Hz)
+    ping_rate: 3
+    
+    # Range in meters
+    # M750d mode 1: max 120m, mode 2: max 40m
+    # M1200d: max 30m
+    range: 10.0
+    
+    # Gain percentage (0-100)
+    gain: 20.0
+    
+    # Speed of sound in m/s (0 = auto calculate from salinity)
+    speed_of_sound: 0.0
+    
+    # Salinity in ppm (0 = freshwater, 35 = saltwater)
+    salinity: 0.0
+    
+    # Water type: 'fresh' or 'salt' (sets salinity automatically)
+    water: "fresh"
+    
+    # Frame ID for the sonar messages
+    frame: "sonar"
+    
+    # Colormap for visualization (0-11)
+    # 0=Autumn, 1=Bone, 2=Cool, 3=Hot, 4=HSV, 5=Jet, 
+    # 6=Ocean, 7=Pink, 8=Rainbow, 9=Spring, 10=Summer, 11=Winter
+    colormap: 2
+    
+    # Raw image mode (true = raw, false = processed/remapped)
+    raw: false

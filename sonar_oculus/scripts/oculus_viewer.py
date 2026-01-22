@@ -1,91 +1,121 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 import cv2
 from scipy.interpolate import interp1d
 
-import rospy
-import cv_bridge
+import rclpy
+from rclpy.node import Node
+from cv_bridge import CvBridge
 from sonar_oculus.msg import OculusPing
 from sensor_msgs.msg import Image
-from dynamic_reconfigure.server import Server
 
 REVERSE_Z = 1
-global res, height, rows, width, cols, map_x, map_y, f_bearings
-res, height, rows, width, cols = None, None, None, None, None
-map_x, map_y = None, None
-f_bearings = None
-
-bridge = cv_bridge.CvBridge()
-
-to_rad = lambda bearing: bearing * np.pi / 18000
 
 
-def generate_map_xy(ping):
-    _res = ping.range_resolution
-    _height = ping.num_ranges * _res
-    _rows = ping.num_ranges
-    _width = np.sin(
-        to_rad(ping.bearings[-1] - ping.bearings[0]) / 2) * _height * 2
-    _cols = int(np.ceil(_width / _res))
+class OculusViewer(Node):
+    def __init__(self):
+        super().__init__('oculus_viewer')
+        
+        # Declare parameters
+        self.declare_parameter('raw', False)
+        self.declare_parameter('colormap', 2)
+        
+        # Initialize variables
+        self.res = None
+        self.height = None
+        self.rows = None
+        self.width = None
+        self.cols = None
+        self.map_x = None
+        self.map_y = None
+        self.f_bearings = None
+        
+        self.bridge = CvBridge()
+        
+        # Create publisher and subscriber
+        self.img_pub = self.create_publisher(Image, '/sonar_oculus_node/image', 10)
+        self.ping_sub = self.create_subscription(
+            OculusPing,
+            '/sonar_oculus_node/ping',
+            self.ping_callback,
+            10
+        )
+        
+        self.get_logger().info('Oculus viewer started')
+    
+    def to_rad(self, bearing):
+        return bearing * np.pi / 18000
+    
+    def generate_map_xy(self, ping):
+        _res = ping.range_resolution
+        _height = ping.num_ranges * _res
+        _rows = ping.num_ranges
+        _width = np.sin(
+            self.to_rad(ping.bearings[-1] - ping.bearings[0]) / 2) * _height * 2
+        _cols = int(np.ceil(_width / _res))
 
-    global res, height, rows, width, cols, map_x, map_y, f_bearings
-    if res == _res and height == _height and rows == _rows and width == _width and cols == _cols:
-        return
-    res, height, rows, width, cols = _res, _height, _rows, _width, _cols
+        if (self.res == _res and self.height == _height and 
+            self.rows == _rows and self.width == _width and self.cols == _cols):
+            return
+        
+        self.res = _res
+        self.height = _height
+        self.rows = _rows
+        self.width = _width
+        self.cols = _cols
 
-    bearings = to_rad(np.asarray(ping.bearings, dtype=np.float32))
-    f_bearings = interp1d(
-        bearings,
-        range(len(bearings)),
-        kind='linear',
-        bounds_error=False,
-        fill_value=-1,
-        assume_sorted=True)
+        bearings = self.to_rad(np.asarray(ping.bearings, dtype=np.float32))
+        self.f_bearings = interp1d(
+            bearings,
+            range(len(bearings)),
+            kind='linear',
+            bounds_error=False,
+            fill_value=-1,
+            assume_sorted=True)
 
-    XX, YY = np.meshgrid(range(cols), range(rows))
-    x = res * (rows - YY)
-    y = res * (-cols / 2.0 + XX + 0.5)
-    b = np.arctan2(y, x) * REVERSE_Z
-    r = np.sqrt(np.square(x) + np.square(y))
-    map_y = np.asarray(r / res, dtype=np.float32)
-    map_x = np.asarray(f_bearings(b), dtype=np.float32)
+        XX, YY = np.meshgrid(range(self.cols), range(self.rows))
+        x = self.res * (self.rows - YY)
+        y = self.res * (-self.cols / 2.0 + XX + 0.5)
+        b = np.arctan2(y, x) * REVERSE_Z
+        r = np.sqrt(np.square(x) + np.square(y))
+        self.map_y = np.asarray(r / self.res, dtype=np.float32)
+        self.map_x = np.asarray(self.f_bearings(b), dtype=np.float32)
+
+    def ping_callback(self, msg):
+        raw = self.get_parameter('raw').get_parameter_value().bool_value
+        cm = self.get_parameter('colormap').get_parameter_value().integer_value
+        
+        if raw:
+            img = self.bridge.imgmsg_to_cv2(msg.ping, desired_encoding='passthrough')
+            img = cv2.normalize(
+                img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+            img = cv2.applyColorMap(img, cm)
+            img_msg = self.bridge.cv2_to_imgmsg(img, encoding="bgr8")
+            img_msg.header.stamp = self.get_clock().now().to_msg()
+            self.img_pub.publish(img_msg)
+        else:
+            self.generate_map_xy(msg)
+
+            img = self.bridge.imgmsg_to_cv2(msg.ping, desired_encoding='passthrough')
+            img = np.array(img, dtype=img.dtype, order='F')
+
+            if self.cols > img.shape[1]:
+                img.resize(self.rows, self.cols)
+            img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
+
+            img = cv2.applyColorMap(img, cm)
+            img_msg = self.bridge.cv2_to_imgmsg(img, encoding="bgr8")
+            img_msg.header.stamp = self.get_clock().now().to_msg()
+            self.img_pub.publish(img_msg)
 
 
-def ping_callback(msg):
-    raw = rospy.get_param('/sonar_oculus_node/Raw', False)
-    cm = rospy.get_param('/sonar_oculus_node/Colormap', 1)
-    if raw:
-        img = bridge.imgmsg_to_cv2(msg.ping, desired_encoding='passthrough')
-        img = cv2.normalize(
-            img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-        img = cv2.applyColorMap(img, cm)
-        img_msg = bridge.cv2_to_imgmsg(img, encoding="bgr8")
-        img_msg.header.stamp = rospy.Time.now()
-        img_pub.publish(img_msg)
-    else:
-        generate_map_xy(msg)
-
-        img = bridge.imgmsg_to_cv2(msg.ping, desired_encoding='passthrough')
-        img = np.array(img, dtype=img.dtype, order='F')
-
-        if cols > img.shape[1]:
-            img.resize(rows, cols)
-        img = cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR)
-
-        # img_msg = bridge.cv2_to_imgmsg(img, encoding="mono8")
-
-        # img = cv2.normalize(
-        #     img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-        img = cv2.applyColorMap(img, cm)
-        img_msg = bridge.cv2_to_imgmsg(img, encoding="bgr8")
-        img_msg.header.stamp = rospy.Time.now()
-        img_pub.publish(img_msg)
+def main(args=None):
+    rclpy.init(args=args)
+    node = OculusViewer()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
-    rospy.init_node('oculus_viewer')
-    img_pub = rospy.Publisher('/sonar_oculus_node/image', Image, queue_size=10)
-    ping_sub = rospy.Subscriber('/sonar_oculus_node/ping', OculusPing,
-                                ping_callback, None, 10)
-
-    rospy.spin()
+    main()

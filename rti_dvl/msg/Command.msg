@@ -1,6 +1,6 @@
 # Subsystem Configuration
 # 3: 600 kHz 4 beam 20 degree piston
-string CEPO 
+string cepo
 
 # CEAUTOSTART On/OFF
 # 0	OFF
@@ -10,10 +10,10 @@ string CEPO
 # 4	RS422
 # 5	EMAC
 # 6	UDP
-string CEAUTOSTART
+string ceautostart
 
 # Ensemble output period in HH:MM:SS.hh
-string CEI
+string cei
 
 # Output format
 # [1] - RoweTech Binary (RTB)
@@ -29,12 +29,12 @@ string CEI
 # [105] - PD5 Binary Format
 # [106] - PD6 ASCII Format
 # [113] - PD13 ASCII Format
-string C485OUT 
-string C232OUT 
+string c485out
+string c232out
 
 # 1 - Turn ON Bottom Tracking
 # 0 - Turn OFF Bottom Tracking
-string CBTON
+string cbton
 
 # Bottom Track Broadband. Sets Bottom Track coded pulse transmission and lag.
 # n, m, d, x
@@ -58,16 +58,16 @@ string CBTON
 #     1 = ping and process each beam one at a time.
 #     2 = ping and process beam pairs.
 #     4 = ping and process all four beams together.
-string CBTBB
+string cbtbb
 
 # Set the maximum depth to search for the bottom. This will reduce the amount of time in the search algorithm.
-string CBTMX
+string cbtmx
 
 # Blanking distance for the Bottom Track ping. This is the area that will be ignored just after the ADCP.
 # n.nn, m.mm
 #     [n.nn] - 0 to 10 meters. Sets the vertical distance from the face of the transducer at which the bottom detection algorithm begins searching for the bottom when range to the bottom is LESS than CBTT parameter b.
 #     [m.mm] - 0 to 300 meters. Sets the vertical distance from the face of the transducer at which the bottom detection algorithm begins searching for the bottom when range to the bottom is GREATER than CBTT parameter b.
-string CBTBL
+string cbtbl
 
 # Bottom Track thresholds.
 # a,b,c,d
@@ -75,23 +75,23 @@ string CBTBL
 #     [b] - Depth(m) Shallow Switch. Depth(m) at which the bottom track switches from using the shallow to the deep SNR. Conditions in shallow water (high backscatter) can be different than deep water so "b" allows for two different SNR settings one for shallow ("a") and one for deep ("c").
 #     [c] - SNR(dB) Deep Detection Threshold. SNR(dB) deep detection threshold. Lowering the SNR counts "a" and/or "c" will allow to the DVL to detect smaller bottom echo at greater range. The consequence is that DVL may false detect the bottom at the wrong range when the bottom signal is weak.
 #     [d] - Depth(m) Deep Switch. Depth(m) at which the bottom track switches from low to high gain receive. The ADCP/DVL has a high power transmitter. In shallow water the bottom echo may saturate the receiver input. While this does not harm the system saturation limits the measurable signal level of the bottom echo which can make it difficult to detect the bottom in a high water backscatter environment. The ADCP/DVL places the receiver in low gain when the depth is below the "d" parameter setting. The change in gain is about 40 dB. If you observe the ADCP/DVL having difficulty detecting the bottom near the "d" setting you may need set "d" to a deeper or more shallow depth depending on the depth where the detection is poor. A good rule to follow is a strong bottom echo requires a larger value in d and a weak bottom echo a smaller value.
-string CBTT
+string cbtt
 
 # Not used for bottom tracking only
 # This is used to create a pause between the Water Profile and Bottom Track ping. This will allow the Bottom Track ping to die down if it is reverberating and causing interference in the Water Profile ping.
-string CBTTBP
+string cbttbp
 
 # Set thresholds to mark the data bad. This will give 3 options of forcing data to be bad. This can also be used to make all the data good by settings all the thresholds to 0.
 # c.cc,q.qq,v.vv
 #     [c.cc] - Correlation threshold.
 #     [q.qq] - Error Velocity threshold. Range: m/s
 #     [v.vv] - Velocity threshold. Range: m/s
-string CBTST
+string cbtst
 
 # Low pass filtering helps reduce velocity measurement noise
 # a,b,c,d,e
 # We do not recommend that the filter be enabled.
-string CBTFILT
+string cbtfilt
 
 # Water Speed of Sound Control.
 # 1, 2, 3, 4
@@ -103,29 +103,29 @@ string CBTFILT
 #     0 = Command
 #     1 = Sensor
 #     2 = Internal Calculation.
-string CWSSC
+string cwssc
 
 # Water Salinity (ppt). Used in the water speed of sound calculation
-string CWS
+string cws
 
 # Water Temperature (degrees celsius). Used in the water speed of sound calculation if the temperature sensor is not available.
-string CWT
+string cwt
 
 # Transducer Depth (meters). Used in the water speed of sound calculation.
-string CTD
+string ctd
 
 # Water Speed of Sound (meters per second).
-string CWSS
+string cwss
 
 # This will set the heading offset for the ADCP. The heading offset will be applied to the heading value before it is to be used within the system for calculations. Typically only the first value is given.
-string CHO
+string cho
 # Heading source. Used to state whether to use no heading, internal compass heading or GPS heading. This value should be set to GPS HDT if you cannot calibrate the compass in its environment.
-string CHS
+string chs
 # Tilt Source. Set whether to use the tilt from internal compass or no tilt.
-string CTS
+string cts
 
 # Velocity Scale Factor
 #  n.nn, m.mm
 #     [n.nn] - Water Velocity Scale Factor
 #     [m.mm] - Bottom Track Scale Factor
-string CVSF
+string cvsf

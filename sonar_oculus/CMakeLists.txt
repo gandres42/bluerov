@@ -1,45 +1,68 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(sonar_oculus)
 
-add_compile_options(-std=c++11)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
+# Find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+# Generate messages
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/OculusFire.msg"
+  "msg/OculusPing.msg"
+  DEPENDENCIES std_msgs sensor_msgs builtin_interfaces
+)
+
+# Build the sonar node
+add_executable(sonar_oculus_node
+  src/sonar.cpp
+  src/OculusClient.cpp
+)
+
+target_include_directories(sonar_oculus_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(sonar_oculus_node
+  rclcpp
+  std_msgs
   sensor_msgs
-  message_generation
-  dynamic_reconfigure
 )
 
-add_message_files(
-   FILES
-   OculusFire.msg
-   OculusPing.msg
+# Link the generated message types
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(sonar_oculus_node "${cpp_typesupport_target}")
+
+# Install executables
+install(TARGETS
+  sonar_oculus_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-generate_messages(
-   DEPENDENCIES
-   sensor_msgs
+# Install Python scripts
+install(PROGRAMS
+  scripts/oculus_viewer.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-generate_dynamic_reconfigure_options(
-   cfg/OculusParams.cfg
- )
-
-catkin_package(
-  CATKIN_DEPENDS roscpp sensor_msgs message_runtime
+# Install launch files
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
-include_directories(
-  ${catkin_INCLUDE_DIRS}
+# Install config files
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}
 )
 
-add_executable(${PROJECT_NAME}_node src/sonar.cpp src/OculusClient.cpp)
-
-add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME}_gencfg)
-
-add_dependencies(${PROJECT_NAME}_node ${PROJECT_NAME}_generate_messages_cpp)
-
-target_link_libraries(${PROJECT_NAME}_node
-   ${catkin_LIBRARIES}
-   ${roslib_LIBRARIES}
-)
+ament_package()
